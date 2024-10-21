@@ -1,0 +1,20 @@
+---
+
+all:
+  hosts:
+    localhost:
+      ansible_host: "127.0.0.1"
+      ansible_connection: local
+      ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+    # localhost2:
+    #   ansible_host: "127.0.0.1"
+    #   ansible_connection: local
+    #   ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    #   start: 1000
+
+    # localhost3:
+    #   ansible_host: "127.0.0.1"
+    #   ansible_connection: local
+    #   ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    #   start: 2000

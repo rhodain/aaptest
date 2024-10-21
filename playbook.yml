@@ -1,0 +1,83 @@
+---
+
+- name: Automation Controller Resource Automation Play
+  hosts: all
+  gather_facts: false
+  strategy: "{{ pb_strategy | default('linear') }}"
+  serial: "{{ 1 if throttle is defined and throttle else omit }}"
+
+  vars:
+    # Controls the number of resources to create
+    count: 1
+
+    # Controllers whether the resources should be deleted
+    delete: false
+
+    # infra.controller_configuration variables
+    controller_configuration_secure_logging: false
+    controller_validate_certs: false
+
+  tasks:
+    - name: Gather minimal facts
+      ansible.builtin.setup:
+        gather_subset:
+          - min
+
+    - name: Set playbook variables
+      when: start is not defined
+      ansible.builtin.set_fact:
+        start: 0
+
+    - name: Configure credentials
+      vars:
+        _credentials_dict:
+          name: Machine Credential
+          organization: Default
+          credential_type: Machine
+          inputs:
+            username: admin
+            password: admin
+          state: "{{ 'exists' if not delete else 'absent' }}"
+
+        credentials: "{{ _credentials_dict | create_multiple_dict(copy_count=count, start=start, field='name') }}"
+      ansible.builtin.include_role:
+        name: infra.controller_configuration.credentials
+
+    - name: Configure inventories
+      vars:
+        _inventory_dict:
+          name: Local
+          organization: Default
+          state: "{{ 'exists' if not delete else 'absent' }}"
+
+        inventories: "{{ _inventory_dict | create_multiple_dict(copy_count=count, start=start, field='name') }}"
+      ansible.builtin.include_role:
+        name: infra.controller_configuration.inventories
+
+    - name: Configure projects
+      vars:
+        _project_dict:
+          name: Example Project
+          organization: Default
+          state: "{{ 'exists' if not delete else 'absent' }}"
+          scm_url: https://github.com/demonpig/aap-example-project
+          scm_type: git
+          scm_clean: true
+          update_project: true
+
+        projects: "{{ _project_dict | create_multiple_dict(copy_count=count, start=start, field='name') }}"
+      ansible.builtin.include_role:
+        name: infra.controller_configuration.projects
+
+    - name: Configure job templates
+      vars:
+        _template_dict:
+          name: Ping
+          playbook: playbooks/ping.yml
+          inventory: Demo Inventory
+          project: Example Project 0
+          state: "{{ 'exists' if not delete else 'absent' }}"
+
+        job_templates: "{{ _template_dict | create_multiple_dict(copy_count=count, start=start, field='name') }}"
+      ansible.builtin.include_role:
+        name: infra.controller_configuration.job_templates
